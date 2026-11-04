@@ -5,6 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('Monthly goal amount uses remaining balance and deadline', () {
+    final goal = SavingsGoal(
+      id: 'goal',
+      title: 'Аялал',
+      target: 1000,
+      saved: 250,
+      deadline: '2027 оны 4 сар',
+      deadlineDate: DateTime(2027, 4),
+      isPriority: true,
+    );
+    expect(goal.monthlyNeeded(DateTime(2027, 1)), 250);
+    expect(goal.withSaved(400).monthlyNeeded(DateTime(2027, 1)), 200);
+    expect(goal.withSaved(400).isPriority, isTrue);
+  });
+
   test('MNT formatting and totals use whole numbers', () {
     expect(formatMoney(1250000), '1,250,000 ₮');
     expect(formatMoney(-186400), '−186,400 ₮');

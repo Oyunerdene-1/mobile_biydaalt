@@ -476,14 +476,19 @@ class GoalsPage extends StatelessWidget {
           ),
         ),
       ),
-    ...store.goals.asMap().entries.map(
-      (item) => Padding(
-        padding: const EdgeInsets.only(bottom: 15),
-        child: item.key == 0
-            ? _featuredGoal(context, item.value)
-            : _goalCard(context, item.value),
-      ),
-    ),
+    ...([...store.goals]..sort(
+          (a, b) => (b.isPriority ? 1 : 0).compareTo(a.isPriority ? 1 : 0),
+        ))
+        .asMap()
+        .entries
+        .map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 15),
+            child: item.key == 0
+                ? _featuredGoal(context, item.value)
+                : _goalCard(context, item.value),
+          ),
+        ),
   ]);
 
   Widget _featuredGoal(BuildContext context, SavingsGoal goal) => Container(
@@ -526,8 +531,8 @@ class GoalsPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 23),
-        const Text(
-          'НЭН ТЭРГҮҮНИЙ',
+        Text(
+          goal.isPriority ? 'НЭН ТЭРГҮҮНИЙ' : 'ХУРИМТЛАЛЫН ЗОРИЛГО',
           style: TextStyle(
             color: Color(0xFFC4BAE7),
             fontSize: 10,
@@ -566,6 +571,11 @@ class GoalsPage extends StatelessWidget {
           backgroundColor: Colors.white24,
         ),
         const SizedBox(height: 18),
+        Text(
+          'Сар бүр ${formatMoney(goal.monthlyNeeded())} хуримтлуулбал зорилгодоо хугацаандаа хүрнэ.',
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+        const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: () => _contribute(context, goal),
           icon: const Icon(Icons.add, size: 16),
@@ -669,6 +679,8 @@ class GoalsPage extends StatelessWidget {
           '${(goal.progress * 100).round()}%',
           style: const TextStyle(color: brand, fontWeight: FontWeight.bold),
         ),
+        const SizedBox(height: 7),
+        Text('Сар бүр ${formatMoney(goal.monthlyNeeded())} хуримтлуулна'),
       ],
     ),
   );
@@ -719,6 +731,8 @@ class _GoalEditorState extends State<GoalEditor> {
   final target = TextEditingController();
   final saved = TextEditingController();
   final deadline = TextEditingController();
+  DateTime? deadlineDate;
+  bool isPriority = false;
   @override
   void dispose() {
     title.dispose();
@@ -779,7 +793,35 @@ class _GoalEditorState extends State<GoalEditor> {
               const SizedBox(height: 11),
               TextFormField(
                 controller: deadline,
-                decoration: const InputDecoration(labelText: 'Хүрэх хугацаа'),
+                readOnly: true,
+                onTap: () async {
+                  final selected = await showDatePicker(
+                    context: context,
+                    initialDate:
+                        deadlineDate ??
+                        DateTime.now().add(const Duration(days: 180)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 3650)),
+                  );
+                  if (selected != null) {
+                    setState(() {
+                      deadlineDate = selected;
+                      deadline.text =
+                          '${selected.year} оны ${selected.month} сарын ${selected.day}';
+                    });
+                  }
+                },
+                decoration: const InputDecoration(
+                  labelText: 'Хүрэх хугацаа',
+                  suffixIcon: Icon(Icons.calendar_today_outlined),
+                ),
+              ),
+              CheckboxListTile(
+                value: isPriority,
+                onChanged: (value) =>
+                    setState(() => isPriority = value ?? false),
+                title: const Text('Нэн тэргүүний зорилго'),
+                contentPadding: EdgeInsets.zero,
               ),
               const SizedBox(height: 17),
               SizedBox(
@@ -808,6 +850,8 @@ class _GoalEditorState extends State<GoalEditor> {
                         deadline: deadline.text.trim().isEmpty
                             ? 'Хугацаа тодорхойгүй'
                             : deadline.text.trim(),
+                        deadlineDate: deadlineDate,
+                        isPriority: isPriority,
                       ),
                     );
                     Navigator.pop(context);

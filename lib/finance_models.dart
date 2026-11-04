@@ -26,6 +26,8 @@ class SavingsGoal {
     required this.saved,
     required this.deadline,
     this.emoji = '🎯',
+    this.deadlineDate,
+    this.isPriority = false,
   });
 
   final String id;
@@ -34,9 +36,22 @@ class SavingsGoal {
   final int saved;
   final String deadline;
   final String emoji;
+  final DateTime? deadlineDate;
+  final bool isPriority;
 
   double get progress => target <= 0 ? 0 : (saved / target).clamp(0, 1);
   int get remaining => (target - saved).clamp(0, target);
+  int monthlyNeeded([DateTime? today]) {
+    if (remaining == 0) return 0;
+    final now = today ?? DateTime.now();
+    final months = deadlineDate == null
+        ? 6
+        : ((deadlineDate!.year - now.year) * 12 +
+                  deadlineDate!.month -
+                  now.month)
+              .clamp(1, 1200);
+    return (remaining / months).ceil();
+  }
 
   SavingsGoal withSaved(int value) => SavingsGoal(
     id: id,
@@ -45,6 +60,8 @@ class SavingsGoal {
     saved: value,
     deadline: deadline,
     emoji: emoji,
+    deadlineDate: deadlineDate,
+    isPriority: isPriority,
   );
 }
 
